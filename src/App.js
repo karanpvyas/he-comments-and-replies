@@ -1,7 +1,7 @@
-import './styles.css';
+import './styles.css'; // You can remove this once you've converted all the CSS
 import React, { useState } from 'react';
 import CommentList from './components/CommentList';
-import CommentForm from './components/CommentForm'; // Import for adding new comments
+import CommentForm from './components/CommentForm';
 import { commentsData } from './data/mockData';
 
 const App = () => {
@@ -16,7 +16,7 @@ const App = () => {
           {
             id: Date.now(),
             user: 'you',
-            profileImage: 'https://i.pravatar.cc/150?img=50', // Use a default or actual user's profile image
+            profileImage: 'https://i.pravatar.cc/150?img=50',
             text,
             replies: [],
           },
@@ -35,25 +35,26 @@ const App = () => {
     const newComment = {
       id: Date.now(),
       user: 'you',
-      profileImage: 'https://i.pravatar.cc/150?img=50', // Use a default or actual user's profile image
+      profileImage: 'https://i.pravatar.cc/150?img=50',
       text: text,
       replies: [],
     };
 
-    // Add the new comment at the top of the list
     setComments([newComment, ...comments]);
   };
 
   return (
-    <div className="App" data-testid="app">
-      <div className="post-container">
-        <h1 className="post-title">How to Improve Web Performance</h1>
+    <div className="App max-w-4xl mx-auto bg-gray-50 p-10 rounded-lg shadow-lg">
+      <div className="post-container bg-white p-6 rounded-lg shadow-md mb-6">
+        <h1 className="text-2xl font-bold mb-4 text-gray-800">
+          How to Improve Web Performance
+        </h1>
         <img
           src="https://react.dev/images/home/conf2021/cover.svg"
           alt="Post"
-          className="post-image"
+          className="w-full h-auto rounded-lg mb-4"
         />
-        <p className="post-content">
+        <p className="text-lg text-gray-600 leading-relaxed">
           Web performance is critical to ensuring a smooth user experience.
           Optimizing for performance can be achieved through a variety of
           strategies including lazy loading images, compressing resources, and
@@ -61,15 +62,15 @@ const App = () => {
           out of your web applications by following best practices and
           leveraging modern tools like Webpack, Lighthouse, and more.
         </p>
+      </div>
 
-        <div className="comments-section">
-          <h2>Comments</h2>
-          <div className="new-comment-form" data-testid="new-comment-form">
-            <CommentForm onSubmit={handleNewComment} />
-          </div>
-          <h4>All comments</h4>
-          <CommentList comments={comments} onReply={handleReply} />
+      <div className="comments-section bg-gray-50 p-6 rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">Comments</h2>
+        <div className="new-comment-form mb-4">
+          <CommentForm onSubmit={handleNewComment} />
         </div>
+        <h4 className="text-lg font-medium mb-4">All comments</h4>
+        <CommentList comments={comments} onReply={handleReply} />
       </div>
     </div>
   );

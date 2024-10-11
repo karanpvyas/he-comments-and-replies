@@ -12,7 +12,6 @@ const CommentForm = ({ onSubmit, onCancel }) => {
     const input = e.target.value;
     setText(input);
 
-    // Detect @ mentions and trigger autocomplete
     const lastWord = input.split(' ').slice(-1)[0];
     if (lastWord.startsWith('@')) {
       const search = lastWord.slice(1).toLowerCase();
@@ -20,14 +19,9 @@ const CommentForm = ({ onSubmit, onCancel }) => {
         user.toLowerCase().startsWith(search)
       );
 
-      if (matches.length > 0) {
-        setFilteredUsers(matches);
-        setShowAutocomplete(true);
-      } else {
-        setShowAutocomplete(false); // No matches, hide dropdown
-      }
+      setFilteredUsers(matches);
+      setShowAutocomplete(matches.length > 0);
 
-      // Calculate mention position
       const { selectionStart } = e.target;
       const inputValue = e.target.value.substring(0, selectionStart);
       const textBeforeCaret = inputValue.split('\n');
@@ -46,7 +40,7 @@ const CommentForm = ({ onSubmit, onCancel }) => {
 
   const handleSelectUser = (user) => {
     const words = text.split(' ');
-    words.pop(); // Remove the incomplete @mention
+    words.pop();
     setText(words.join(' ') + ` @${user} `);
     setShowAutocomplete(false);
   };
@@ -55,29 +49,14 @@ const CommentForm = ({ onSubmit, onCancel }) => {
     e.preventDefault();
     if (text.trim()) {
       onSubmit(text);
-      setText(''); // Clear input
+      setText('');
     }
-  };
-
-  const highlightMatch = (user, searchTerm) => {
-    const startIndex = user.toLowerCase().indexOf(searchTerm);
-    const beforeMatch = user.slice(0, startIndex);
-    const match = user.slice(startIndex, startIndex + searchTerm.length);
-    const afterMatch = user.slice(startIndex + searchTerm.length);
-
-    return (
-      <>
-        {beforeMatch}
-        <span className="highlight">{match}</span>
-        {afterMatch}
-      </>
-    );
   };
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="comment-form"
+      className="comment-form flex flex-col mt-2"
       data-testid="comment-form"
     >
       <textarea
@@ -85,12 +64,13 @@ const CommentForm = ({ onSubmit, onCancel }) => {
         value={text}
         onChange={handleTextChange}
         placeholder="Write a comment..."
+        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500"
         data-testid="comment-input"
       ></textarea>
 
       {showAutocomplete && filteredUsers.length > 0 && (
         <ul
-          className="mentions-dropdown"
+          className="mentions-dropdown absolute mt-2 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-40 overflow-y-auto w-64"
           style={{
             top: `${mentionPosition.top}px`,
             left: `${mentionPosition.left}px`,
@@ -101,17 +81,23 @@ const CommentForm = ({ onSubmit, onCancel }) => {
             <li
               key={user}
               onClick={() => handleSelectUser(user)}
+              className="px-3 py-2 cursor-pointer hover:bg-gray-100"
               data-testid={`mention-item-${user}`}
             >
-              {highlightMatch(user, text.split(' ').slice(-1)[0].slice(1))}
+              {user}
             </li>
           ))}
         </ul>
       )}
 
-      <div className="comment-form-actions">
+      <div className="comment-form-actions flex items-center mt-4">
         <button
           type="submit"
+          className={`mr-4 px-4 py-2 rounded-md font-semibold text-white ${
+            text.trim()
+              ? 'bg-blue-500 hover:bg-blue-600'
+              : 'bg-gray-300 cursor-not-allowed'
+          }`}
           disabled={text.trim() === ''}
           data-testid="submit-button"
         >
@@ -120,8 +106,8 @@ const CommentForm = ({ onSubmit, onCancel }) => {
         {onCancel && (
           <button
             type="button"
-            className="cancel-button"
             onClick={onCancel}
+            className="cancel-button px-4 py-2 rounded-md font-semibold bg-gray-400 hover:bg-gray-500 text-white"
             data-testid="cancel-button"
           >
             Cancel

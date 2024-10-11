@@ -6,6 +6,8 @@ const APP_DIR = path.resolve(__dirname, 'src');
 const BUILD_DIR = path.resolve(__dirname, 'build');
 const env = process.env.NODE_ENV || 'development';
 
+process.env.REACT_APP_HASH = process.env.REACT_APP_HASH || 'dev';
+
 module.exports = {
   entry: ['@babel/polyfill', `${APP_DIR}/index.js`],
   output: {
@@ -69,11 +71,11 @@ module.exports = {
   devServer: {
     contentBase: BUILD_DIR,
     compress: true,
-    port: 5000,
+    port: 5001,
     historyApiFallback: true,
     disableHostCheck: true,
   },
   watchOptions: {
-    ignored: /node_modules/
+    ignored: /node_modules/,
   },
 };

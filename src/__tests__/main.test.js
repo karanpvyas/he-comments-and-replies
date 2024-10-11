@@ -1,136 +1,92 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import '@testing-library/jest-dom/extend-expect';
-import userEvent from '@testing-library/user-event';
+import App from '../App';
 
-import { Annotations } from '../Annotations';
+test('should add a new top-level comment and place it in the correct position', () => {
+  render(<App />);
 
-const paragraph =
-  'The project team has been working exceptionally well over the past few months, but there are still occasional communication issues that need to be addressed. The new hire has shown great potential and enthusiasm, yet some tasks were delayed due to a lack of experience.';
+  const input = screen.getByTestId('comment-input');
+  const submitButton = screen.getByTestId('submit-button');
 
-const selectWord = (word, isMetaKey = false) =>
-  fireEvent.click(screen.getByText(word), { metaKey: isMetaKey });
-
-const selectWords = (words) => {
-  words.forEach(async (word) => {
-    const wordEl = screen.getByText(word);
-    fireEvent.click(wordEl, { metaKey: true });
+  fireEvent.change(input, {
+    target: { value: 'This is a new top-level comment' },
   });
-};
+  fireEvent.click(submitButton);
 
-const expectWordsSelected = (words) =>
-  words.forEach((word) => {
-    expect(screen.getByText(word).selected).toBeTruthy();
-  });
-
-const expectWordsUnselected = (words) =>
-  words.forEach((word) => expect(screen.getByText(word).selected).toBeFalsy());
-
-const expectWordsIntent = (words, intent) =>
-  words.forEach((word) => {
-    expect(screen.getByText(word)).toHaveClass(`intent-${intent}`);
-  });
-
-const positiveWords = ['working', 'exceptionally', 'well', 'project', 'team'];
-const positiveWords2 = ['great', 'potential'];
-
-const negativeWords = ['communication', 'issues'];
-const negativeWords2 = ['lack', 'of', 'experience.'];
-
-test('should select and unselect multiple words', () => {
-  render(<Annotations paragraph={paragraph} />);
-  selectWords(positiveWords);
-  expectWordsSelected(positiveWords);
-  screen.getByTestId('menu');
-  selectWords(negativeWords);
-
-  expectWordsSelected([...positiveWords, ...negativeWords]);
-
-  selectWord(positiveWords2[0]);
-  selectWords(positiveWords2);
-
-  expectWordsSelected(
-    positiveWords2.filter((word) => word !== positiveWords2[0])
+  const commentList = screen.getByTestId('comment-1').parentElement;
+  expect(commentList.children[0]).toHaveTextContent(
+    'This is a new top-level comment'
   );
-  expectWordsUnselected([
-    ...positiveWords,
-    ...negativeWords,
-    positiveWords2[0],
-  ]);
 });
 
-test('annotates selected words with correct intent and reset works', () => {
-  render(<Annotations paragraph={paragraph} />);
-  selectWords(positiveWords);
-  expect(screen.getByText('Reset Annotation').disabled).toBeTruthy();
-  fireEvent.click(screen.getByText('Annotate Positive'));
-  expect(screen.getByText('Reset Annotation').disabled).toBeFalsy();
-  expectWordsIntent(positiveWords, 'positive');
+test('should add a reply to an existing comment and nest it correctly', () => {
+  render(<App />);
 
-  selectWords(negativeWords);
+  const replyButton = screen.getByTestId('reply-button-1');
+  fireEvent.click(replyButton);
 
-  fireEvent.click(screen.getByText('Annotate Negative'));
-  expect(screen.getByText('Annotate Positive').selected).toBeFalsy();
-  expect(screen.getByText('Annotate Negative').selected).toBeTruthy();
+  const replyForm = screen.getByTestId('comment-form-wrapper-1');
+  const replyInput = replyForm.querySelector('[data-testid="comment-input"]');
+  const submitReplyButton = replyForm.querySelector(
+    '[data-testid="submit-button"]'
+  );
 
-  expectWordsIntent(positiveWords2, 'default');
-  selectWords(positiveWords2);
-  fireEvent.click(screen.getByText('Annotate Negative'));
+  fireEvent.change(replyInput, {
+    target: { value: 'This is a reply to the first comment' },
+  });
+  fireEvent.click(submitReplyButton);
 
-  selectWord(negativeWords[0]);
-  fireEvent.click(screen.getByText('Annotate Positive'));
+  const parentComment = screen.getByTestId('comment-1');
+  const repliesContainer = parentComment.querySelector('.reply-container');
 
-  selectWords(negativeWords2);
-  fireEvent.click(screen.getByText('Annotate Negative'));
+  expect(repliesContainer.children[0]).toHaveTextContent(
+    'This is a reply to the first comment'
+  );
+});
 
-  expectWordsIntent(positiveWords, 'positive');
-  expectWordsIntent(positiveWords2, 'negative');
-  expectWordsIntent(negativeWords, 'positive');
-  expectWordsIntent(negativeWords2, 'negative');
+test('should show only matching mention items in the dropdown', () => {
+  render(<App />);
 
-  selectWord(positiveWords2[1]);
-  expect(screen.getByText('Annotate Positive').selected).toBeFalsy();
-  expect(screen.getByText('Annotate Negative').selected).toBeTruthy();
-  fireEvent.click(screen.getByText('Annotate Positive'));
-  expect(screen.getByText('Annotate Positive').selected).toBeTruthy();
-  expect(screen.getByText('Annotate Negative').selected).toBeFalsy();
+  const input = screen.getByTestId('comment-input');
+  fireEvent.change(input, { target: { value: '@a' } });
 
-  selectWord(negativeWords[1]);
-  fireEvent.click(screen.getByText('Annotate Negative'));
+  const mentionDropdown = screen.getByTestId('mentions-dropdown');
 
-  selectWord(negativeWords2[2]);
-  fireEvent.click(screen.getByText('Reset Annotation'));
+  expect(screen.getByTestId('mention-item-Alice')).toBeTruthy();
+  expect(screen.queryByTestId('mention-item-Bob')).not.toBeInTheDocument();
+  expect(screen.queryByTestId('mention-item-Charlie')).not.toBeInTheDocument();
+});
 
-  expectWordsIntent(positiveWords, 'positive');
-  expectWordsIntent(positiveWords2, 'positive');
-  expectWordsIntent(negativeWords, 'negative');
-  expectWordsIntent(negativeWords2, 'default');
+test('should display cancel and submit buttons when the reply form is open, and submit button should be enabled/disabled based on input', () => {
+  render(<App />);
 
-  expectWordsSelected(negativeWords2);
-  fireEvent.click(screen.getByText('Annotate Negative'));
-  expectWordsSelected(negativeWords2);
-  expectWordsIntent(negativeWords2, 'negative');
+  const replyButton = screen.getByTestId('reply-button-1');
+  fireEvent.click(replyButton);
 
-  expect(screen.getByText('Reset Annotation').disabled).toBeFalsy();
-  fireEvent.click(screen.getByText('Reset Annotation'));
-  expect(screen.getByText('Reset Annotation').disabled).toBeTruthy();
+  const replyForm = screen.getByTestId('comment-form-wrapper-1');
+  const cancelButton = replyForm.querySelector('[data-testid="cancel-button"]');
+  const submitButton = replyForm.querySelector('[data-testid="submit-button"]');
+  const replyInput = replyForm.querySelector('[data-testid="comment-input"]');
 
-  selectWord(negativeWords[0]);
-  fireEvent.click(screen.getByText('Reset Annotation'));
+  expect(cancelButton).toBeTruthy();
+  expect(submitButton).toBeTruthy();
 
-  selectWord(positiveWords[0]);
-  fireEvent.click(screen.getByText('Reset Annotation'));
+  expect(submitButton).toBeDisabled();
 
-  selectWord(positiveWords2[0]);
-  fireEvent.click(screen.getByText('Reset Annotation'));
+  fireEvent.change(replyInput, { target: { value: 'This is a reply' } });
 
-  expectWordsIntent(negativeWords2, 'default');
-  expectWordsIntent(positiveWords, 'default');
-  expectWordsIntent(positiveWords2, 'default');
-  expectWordsIntent(negativeWords, 'default');
-  expectWordsUnselected([
-    ...positiveWords,
-    ...negativeWords,
-    ...negativeWords2,
-  ]);
-  expectWordsSelected(positiveWords2);
+  expect(submitButton).not.toBeDisabled();
+
+  fireEvent.change(replyInput, { target: { value: '' } });
+
+  expect(submitButton).toBeDisabled();
+});
+
+test('should hide mention dropdown when no matches are found', () => {
+  render(<App />);
+
+  const input = screen.getByTestId('comment-input');
+  fireEvent.change(input, { target: { value: '@z' } });
+
+  const mentionDropdown = screen.queryByTestId('mentions-dropdown');
+  expect(mentionDropdown).not.toBeInTheDocument();
 });
