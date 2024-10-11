@@ -85,7 +85,11 @@ test('should hide mention dropdown when no matches are found', () => {
   render(<App />);
 
   const input = screen.getByTestId('comment-input');
-  fireEvent.change(input, { target: { value: '@z' } });
+
+  fireEvent.change(input, { target: { value: '@' } });
+  screen.getByTestId('mentions-dropdown');
+
+  fireEvent.change(input, { target: { value: ' @z' } });
 
   const mentionDropdown = screen.queryByTestId('mentions-dropdown');
   expect(mentionDropdown).not.toBeInTheDocument();

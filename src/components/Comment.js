@@ -4,13 +4,12 @@ import CommentForm from './CommentForm';
 const Comment = ({ comment, onReply }) => {
   const [showReplyForm, setShowReplyForm] = useState(false);
 
-  const handleReplySubmit = (text) => {
-    setShowReplyForm(false);
-    onReply(comment.id, text);
+  const handleReplySubmit = () => {
+    //Implement this
   };
 
   const handleCancelReply = () => {
-    setShowReplyForm(false);
+    //Implement this
   };
 
   return (
@@ -32,7 +31,9 @@ const Comment = ({ comment, onReply }) => {
           {!showReplyForm && (
             <div className="reply-button mt-2">
               <button
-                onClick={() => setShowReplyForm(true)}
+                onClick={() => {
+                  /** Implement this */
+                }}
                 className="text-blue-600 hover:text-blue-800 font-bold"
                 data-testid={`reply-button-${comment.id}`}
               >

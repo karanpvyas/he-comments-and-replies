@@ -8,48 +8,29 @@ const CommentForm = ({ onSubmit, onCancel }) => {
   const [mentionPosition, setMentionPosition] = useState({ top: 0, left: 0 });
   const textareaRef = useRef(null);
 
+  const setMentionPopoverCoordinates = () => {
+    const rect = textareaRef.current.getBoundingClientRect();
+    setMentionPosition({
+      top: rect.top + window.scrollY + 24,
+      left: rect.left /** + some buffer here to make it look just like in the video? */,
+    });
+  };
+
   const handleTextChange = (e) => {
-    const input = e.target.value;
-    setText(input);
-
-    const lastWord = input.split(' ').slice(-1)[0];
-    if (lastWord.startsWith('@')) {
-      const search = lastWord.slice(1).toLowerCase();
-      const matches = users.filter((user) =>
-        user.toLowerCase().startsWith(search)
-      );
-
-      setFilteredUsers(matches);
-      setShowAutocomplete(matches.length > 0);
-
-      const { selectionStart } = e.target;
-      const inputValue = e.target.value.substring(0, selectionStart);
-      const textBeforeCaret = inputValue.split('\n');
-      const lastLine = textBeforeCaret[textBeforeCaret.length - 1];
-      const caretPosition = lastLine.length;
-
-      const rect = textareaRef.current.getBoundingClientRect();
-      setMentionPosition({
-        top: rect.top + window.scrollY + 24,
-        left: rect.left + caretPosition * 8,
-      });
-    } else {
-      setShowAutocomplete(false);
-    }
+    //Implement this
+    //Hint: based on some logic, might want to call setMentionPopoverCoordinates from here.
   };
 
   const handleSelectUser = (user) => {
-    const words = text.split(' ');
-    words.pop();
-    setText(words.join(' ') + ` @${user} `);
-    setShowAutocomplete(false);
+    //Implement
   };
 
   const highlightMatch = (user, searchTerm) => {
-    const startIndex = user.toLowerCase().indexOf(searchTerm.toLowerCase());
-    const beforeMatch = user.slice(0, startIndex);
-    const match = user.slice(startIndex, startIndex + searchTerm.length);
-    const afterMatch = user.slice(startIndex + searchTerm.length);
+    //Implement this so the matched substring gets highlighed when rendering mentioned users.
+
+    const beforeMatch = user;
+    const match = '';
+    const afterMatch = '';
 
     return (
       <>
@@ -63,11 +44,8 @@ const CommentForm = ({ onSubmit, onCancel }) => {
   };
 
   const handleSubmit = (e) => {
+    //Implement this
     e.preventDefault();
-    if (text.trim()) {
-      onSubmit(text);
-      setText('');
-    }
   };
 
   return (

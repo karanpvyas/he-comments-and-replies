@@ -1,46 +1,24 @@
-import './styles.css'; // You can remove this once you've converted all the CSS
+import './styles.css';
 import React, { useState } from 'react';
 import CommentList from './components/CommentList';
 import CommentForm from './components/CommentForm';
 import { commentsData } from './data/mockData';
 
 const App = () => {
-  const [comments, setComments] = useState(commentsData);
-
-  const handleReply = (commentId, text) => {
-    const newComments = [...comments];
-
-    const addReply = (comment) => {
-      if (comment.id === commentId) {
-        comment.replies = [
-          {
-            id: Date.now(),
-            user: 'you',
-            profileImage: 'https://i.pravatar.cc/150?img=50',
-            text,
-            replies: [],
-          },
-          ...comment.replies,
-        ];
-      } else {
-        comment.replies.forEach((reply) => addReply(reply));
-      }
-    };
-
-    newComments.forEach(addReply);
-    setComments(newComments);
+  const handleNewComment = () => {
+    // Hint: You can make a new comment as such
+    // const newComment = {
+    //   id: Date.now(),
+    //   user: 'you',
+    //   profileImage: 'https://i.pravatar.cc/150?img=50',
+    //   text: userInput,
+    //   replies: [],
+    // };
+    //Implement this!
   };
 
-  const handleNewComment = (text) => {
-    const newComment = {
-      id: Date.now(),
-      user: 'you',
-      profileImage: 'https://i.pravatar.cc/150?img=50',
-      text: text,
-      replies: [],
-    };
-
-    setComments([newComment, ...comments]);
+  const handleReply = () => {
+    //Implement this
   };
 
   return (
@@ -67,10 +45,10 @@ const App = () => {
       <div className="comments-section bg-gray-50 p-6 rounded-lg shadow-md">
         <h2 className="text-xl font-semibold mb-4 text-gray-800">Comments</h2>
         <div className="new-comment-form mb-4">
-          <CommentForm onSubmit={handleNewComment} />
+          <CommentForm />
         </div>
         <h4 className="text-lg font-medium mb-4">All comments</h4>
-        <CommentList comments={comments} onReply={handleReply} />
+        <CommentList comments={commentsData} />
       </div>
     </div>
   );
