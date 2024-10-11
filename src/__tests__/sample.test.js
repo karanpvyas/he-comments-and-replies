@@ -110,3 +110,19 @@ test('should unmount the reply input after submitting a reply', () => {
     screen.queryByTestId('comment-form-wrapper-1')
   ).not.toBeInTheDocument();
 });
+
+test('should highlight matching parts of the mention in the dropdown using data-highlight', () => {
+  render(<App />);
+
+  const input = screen.getByTestId('comment-input');
+  fireEvent.change(input, { target: { value: '@al' } });
+
+  const mentionDropdown = screen.getByTestId('mentions-dropdown');
+  expect(mentionDropdown).toBeInTheDocument();
+
+  const mentionItem = screen.getByTestId('mention-item-Alice');
+  expect(mentionItem).toBeInTheDocument();
+
+  const highlightedPart = mentionItem.querySelector('span[data-highlight]');
+  expect(highlightedPart).toHaveTextContent('Al');
+});

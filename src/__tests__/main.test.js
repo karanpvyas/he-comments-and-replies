@@ -90,3 +90,39 @@ test('should hide mention dropdown when no matches are found', () => {
   const mentionDropdown = screen.queryByTestId('mentions-dropdown');
   expect(mentionDropdown).not.toBeInTheDocument();
 });
+
+test('should unmount the reply input after submitting a reply', () => {
+  render(<App />);
+
+  const replyButton = screen.getByTestId('reply-button-1');
+  fireEvent.click(replyButton);
+
+  const replyForm = screen.getByTestId('comment-form-wrapper-1');
+  expect(replyForm).toBeInTheDocument();
+
+  const replyInput = replyForm.querySelector('[data-testid="comment-input"]');
+  fireEvent.change(replyInput, { target: { value: 'This is a reply' } });
+
+  const submitButton = replyForm.querySelector('[data-testid="submit-button"]');
+  fireEvent.click(submitButton);
+
+  expect(
+    screen.queryByTestId('comment-form-wrapper-1')
+  ).not.toBeInTheDocument();
+});
+
+test('should highlight matching parts of the mention in the dropdown using data-highlight', () => {
+  render(<App />);
+
+  const input = screen.getByTestId('comment-input');
+  fireEvent.change(input, { target: { value: '@al' } });
+
+  const mentionDropdown = screen.getByTestId('mentions-dropdown');
+  expect(mentionDropdown).toBeInTheDocument();
+
+  const mentionItem = screen.getByTestId('mention-item-Alice');
+  expect(mentionItem).toBeInTheDocument();
+
+  const highlightedPart = mentionItem.querySelector('span[data-highlight]');
+  expect(highlightedPart).toHaveTextContent('Al');
+});

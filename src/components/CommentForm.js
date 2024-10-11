@@ -45,6 +45,23 @@ const CommentForm = ({ onSubmit, onCancel }) => {
     setShowAutocomplete(false);
   };
 
+  const highlightMatch = (user, searchTerm) => {
+    const startIndex = user.toLowerCase().indexOf(searchTerm.toLowerCase());
+    const beforeMatch = user.slice(0, startIndex);
+    const match = user.slice(startIndex, startIndex + searchTerm.length);
+    const afterMatch = user.slice(startIndex + searchTerm.length);
+
+    return (
+      <>
+        {beforeMatch}
+        <span data-highlight style={{ color: 'blue', fontWeight: 'bold' }}>
+          {match}
+        </span>
+        {afterMatch}
+      </>
+    );
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (text.trim()) {
@@ -84,7 +101,7 @@ const CommentForm = ({ onSubmit, onCancel }) => {
               className="px-3 py-2 cursor-pointer hover:bg-gray-100"
               data-testid={`mention-item-${user}`}
             >
-              {user}
+              {highlightMatch(user, text.split(' ').slice(-1)[0].slice(1))}
             </li>
           ))}
         </ul>
