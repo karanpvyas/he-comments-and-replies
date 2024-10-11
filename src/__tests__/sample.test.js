@@ -90,3 +90,23 @@ test('should hide mention dropdown when no matches are found', () => {
   const mentionDropdown = screen.queryByTestId('mentions-dropdown');
   expect(mentionDropdown).not.toBeInTheDocument();
 });
+
+test('should unmount the reply input after submitting a reply', () => {
+  render(<App />);
+
+  const replyButton = screen.getByTestId('reply-button-1');
+  fireEvent.click(replyButton);
+
+  const replyForm = screen.getByTestId('comment-form-wrapper-1');
+  expect(replyForm).toBeInTheDocument();
+
+  const replyInput = replyForm.querySelector('[data-testid="comment-input"]');
+  fireEvent.change(replyInput, { target: { value: 'This is a reply' } });
+
+  const submitButton = replyForm.querySelector('[data-testid="submit-button"]');
+  fireEvent.click(submitButton);
+
+  expect(
+    screen.queryByTestId('comment-form-wrapper-1')
+  ).not.toBeInTheDocument();
+});
