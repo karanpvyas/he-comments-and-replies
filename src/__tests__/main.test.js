@@ -1,194 +1,136 @@
-import {render, screen, waitFor} from "@testing-library/react";
-import user from "@testing-library/user-event";
-import "@testing-library/jest-dom";
-import TaskManager from "../TaskManager";
-import TaskCard from "../TaskCard";
+import { render, screen, fireEvent } from '@testing-library/react';
+import '@testing-library/jest-dom/extend-expect';
+import userEvent from '@testing-library/user-event';
 
-jest.mock('../CloseButton', () => require('../__mocks__/CloseButton')(jest.fn()));
-global.renderCountArgs = [];
+import { Annotations } from '../Annotations';
 
-describe("1.", () => {
-  let tasks = [
-    {
-      id: 1,
-      title: "Task 1",
-      status: "In Progress",
-      assignee: "Alice",
-      dueDate: "2024-08-20",
-    },
-  ];
+const paragraph =
+  'The project team has been working exceptionally well over the past few months, but there are still occasional communication issues that need to be addressed. The new hire has shown great potential and enthusiasm, yet some tasks were delayed due to a lack of experience.';
 
-  const loadTasks = () =>
-    new Promise((res) => {
-      setTimeout(() => {
-        res(tasks);
-      }, 100)
-    });
+const selectWord = (word, isMetaKey = false) =>
+  fireEvent.click(screen.getByText(word), { metaKey: isMetaKey });
 
-  test("1.", async () => {
-    // jest.useFakeTimers();
-
-    render(<TaskManager loadTasks={loadTasks}/>);
-
-    // jest.runAllTimers();
-
-    await screen.findByText("Task 1");
-
-    const iconEl = screen.getByTestId("refresh-icon");
-    expect(iconEl.classList.contains("animate-spin")).toBe(false);
-
-    // jest.useRealTimers()
+const selectWords = (words) => {
+  words.forEach(async (word) => {
+    const wordEl = screen.getByText(word);
+    fireEvent.click(wordEl, { metaKey: true });
   });
-  test("2.", async () => {
-    // jest.useFakeTimers();
+};
 
-    render(<TaskManager loadTasks={loadTasks}/>);
-
-    // jest.runAllTimers();
-
-    await screen.findByText("Task 1");
-
-    const el = screen.getByTestId("refresh-button");
-
-    await user.click(el);
-
-    const iconEl = screen.getByTestId("refresh-icon");
-    expect(iconEl.classList.contains("animate-spin")).toBe(true);
-
-    // jest.runAllTimers();
-
-    await waitFor(() => {
-      expect(iconEl.classList.contains("animate-spin")).toBe(false);
-    }, {timeout: 200})
-
-    // jest.useRealTimers()
+const expectWordsSelected = (words) =>
+  words.forEach((word) => {
+    expect(screen.getByText(word).selected).toBeTruthy();
   });
+
+const expectWordsUnselected = (words) =>
+  words.forEach((word) => expect(screen.getByText(word).selected).toBeFalsy());
+
+const expectWordsIntent = (words, intent) =>
+  words.forEach((word) => {
+    expect(screen.getByText(word)).toHaveClass(`intent-${intent}`);
+  });
+
+const positiveWords = ['working', 'exceptionally', 'well', 'project', 'team'];
+const positiveWords2 = ['great', 'potential'];
+
+const negativeWords = ['communication', 'issues'];
+const negativeWords2 = ['lack', 'of', 'experience.'];
+
+test('should select and unselect multiple words', () => {
+  render(<Annotations paragraph={paragraph} />);
+  selectWords(positiveWords);
+  expectWordsSelected(positiveWords);
+  screen.getByTestId('menu');
+  selectWords(negativeWords);
+
+  expectWordsSelected([...positiveWords, ...negativeWords]);
+
+  selectWord(positiveWords2[0]);
+  selectWords(positiveWords2);
+
+  expectWordsSelected(
+    positiveWords2.filter((word) => word !== positiveWords2[0])
+  );
+  expectWordsUnselected([
+    ...positiveWords,
+    ...negativeWords,
+    positiveWords2[0],
+  ]);
 });
 
-describe("2.", () => {
-  let tasks = [
-    {
-      id: 1,
-      title: "Task 1",
-      status: "In Progress",
-      assignee: "Alice",
-      dueDate: "2024-08-20",
-    },
-    {
-      id: 2,
-      title: "Task 2",
-      status: "Pending",
-      assignee: "Bob",
-      dueDate: "2024-08-22",
-    },
-  ];
+test('annotates selected words with correct intent and reset works', () => {
+  render(<Annotations paragraph={paragraph} />);
+  selectWords(positiveWords);
+  expect(screen.getByText('Reset Annotation').disabled).toBeTruthy();
+  fireEvent.click(screen.getByText('Annotate Positive'));
+  expect(screen.getByText('Reset Annotation').disabled).toBeFalsy();
+  expectWordsIntent(positiveWords, 'positive');
 
-  const loadTasks = () =>
-    new Promise((res) => {
-      setTimeout(() => {
-        res(tasks);
-        tasks = [
-          {
-            ...tasks[0],
-            status: tasks[0].status === "In Progress" ? "Pending" : "In Progress",
-          },
-          ...tasks.slice(1),
-        ];
-      }, 100)
-    });
+  selectWords(negativeWords);
 
-  test("3.", async () => {
-    // jest.useFakeTimers();
-    const { rerender } = render(<TaskManager loadTasks={loadTasks}/>);
+  fireEvent.click(screen.getByText('Annotate Negative'));
+  expect(screen.getByText('Annotate Positive').selected).toBeFalsy();
+  expect(screen.getByText('Annotate Negative').selected).toBeTruthy();
 
-    const cellEl = await screen.findByText("Task 1");
+  expectWordsIntent(positiveWords2, 'default');
+  selectWords(positiveWords2);
+  fireEvent.click(screen.getByText('Annotate Negative'));
 
-    let taskRowEl = screen.getByTestId(`task-row-${tasks[0].id}`);
-    let taskRowStatusCellEl = taskRowEl.querySelector('[data-cell-type="status"]');
+  selectWord(negativeWords[0]);
+  fireEvent.click(screen.getByText('Annotate Positive'));
 
-    expect(taskRowStatusCellEl.textContent).toBe("In Progress");
+  selectWords(negativeWords2);
+  fireEvent.click(screen.getByText('Annotate Negative'));
 
-    await user.click(cellEl);
+  expectWordsIntent(positiveWords, 'positive');
+  expectWordsIntent(positiveWords2, 'negative');
+  expectWordsIntent(negativeWords, 'positive');
+  expectWordsIntent(negativeWords2, 'negative');
 
-    let taskCardEl = screen.getByTestId("task-card");
-    let taskCardStatusSelectEl = taskCardEl.querySelector("#status");
-    expect(taskCardStatusSelectEl.dataset.value).toBe("In Progress");
+  selectWord(positiveWords2[1]);
+  expect(screen.getByText('Annotate Positive').selected).toBeFalsy();
+  expect(screen.getByText('Annotate Negative').selected).toBeTruthy();
+  fireEvent.click(screen.getByText('Annotate Positive'));
+  expect(screen.getByText('Annotate Positive').selected).toBeTruthy();
+  expect(screen.getByText('Annotate Negative').selected).toBeFalsy();
 
-    const refreshButtonEl = screen.getByTestId("refresh-button");
-    await user.click(refreshButtonEl);
+  selectWord(negativeWords[1]);
+  fireEvent.click(screen.getByText('Annotate Negative'));
 
-    await waitFor(() => {
-      expect(taskRowStatusCellEl.textContent).toBe("Pending");
-    }, {timeout: 200});
+  selectWord(negativeWords2[2]);
+  fireEvent.click(screen.getByText('Reset Annotation'));
 
-    expect(taskCardStatusSelectEl.dataset.value).toBe("Pending");
+  expectWordsIntent(positiveWords, 'positive');
+  expectWordsIntent(positiveWords2, 'positive');
+  expectWordsIntent(negativeWords, 'negative');
+  expectWordsIntent(negativeWords2, 'default');
 
-    await user.click(await screen.findByText("Task 2"));
+  expectWordsSelected(negativeWords2);
+  fireEvent.click(screen.getByText('Annotate Negative'));
+  expectWordsSelected(negativeWords2);
+  expectWordsIntent(negativeWords2, 'negative');
 
-    // the value in the task card
-    expect(screen.getByLabelText('Title').value).toBe("Task 2");
+  expect(screen.getByText('Reset Annotation').disabled).toBeFalsy();
+  fireEvent.click(screen.getByText('Reset Annotation'));
+  expect(screen.getByText('Reset Annotation').disabled).toBeTruthy();
 
-    let task = {
-      id: 1,
-      title: "Task 1",
-      status: "In Progress",
-      assignee: "Alice",
-      dueDate: "2024-08-20",
-    };
+  selectWord(negativeWords[0]);
+  fireEvent.click(screen.getByText('Reset Annotation'));
 
-    global.renderCountArgs = [];
+  selectWord(positiveWords[0]);
+  fireEvent.click(screen.getByText('Reset Annotation'));
 
-    rerender(<TaskCard task={task} statuses={[]} users={[]}/>);
+  selectWord(positiveWords2[0]);
+  fireEvent.click(screen.getByText('Reset Annotation'));
 
-    task = {...task};
-    rerender(<TaskCard task={task} statuses={[]} users={[]}/>);
-    
-    expect(global.renderCountArgs).toEqual([
-      [1],
-      [2],
-    ]);
-  });
-});
-
-describe("3.", () => {
-  let tasks = [
-    {
-      id: 1,
-      title: "Task 1",
-      status: "In Progress",
-      assignee: "Alice",
-      dueDate: "2024-08-20",
-    },
-  ];
-
-  const loadTasks = () =>
-    new Promise((res) => {
-      setTimeout(() => {
-        res(tasks);
-      }, 100)
-    });
-
-  test("4.", async () => {
-    render(<TaskManager loadTasks={loadTasks}/>);
-
-    const cellEl = await screen.findByText("Task 1");
-    await user.click(cellEl);
-
-    await screen.findByTestId("task-card");
-
-    // In the task card, replace existing content with "hello world"
-    const inputEl = screen.getByLabelText('Title');
-    inputEl.setSelectionRange(0, inputEl.value.length);
-
-    await user.type(inputEl, "hello world");
-    await user.tab();
-
-    // In the task card, the updated value should be "hello world"
-    expect(screen.getByLabelText('Title').value).toBe("hello world");
-
-    const taskRowEl = await screen.findByTestId(`task-row-${tasks[0].id}`);
-
-    // In the table, the value should be "hello world"
-    expect(taskRowEl.querySelector('[data-cell-type="title"]').textContent).toBe("hello world");
-  });
+  expectWordsIntent(negativeWords2, 'default');
+  expectWordsIntent(positiveWords, 'default');
+  expectWordsIntent(positiveWords2, 'default');
+  expectWordsIntent(negativeWords, 'default');
+  expectWordsUnselected([
+    ...positiveWords,
+    ...negativeWords,
+    ...negativeWords2,
+  ]);
+  expectWordsSelected(positiveWords2);
 });

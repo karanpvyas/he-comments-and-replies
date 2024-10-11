@@ -1,228 +1,92 @@
-import {render, screen, waitFor} from "@testing-library/react";
-import user from "@testing-library/user-event";
-import "@testing-library/jest-dom";
-import TaskManager from "../TaskManager";
-import TaskCard from "../TaskCard";
+import { render, screen, fireEvent } from '@testing-library/react';
+import App from '../App';
 
-jest.mock('../CloseButton', () => require('../__mocks__/CloseButton')(jest.fn()));
-global.renderCountArgs = [];
+test('should add a new top-level comment and place it in the correct position', () => {
+  render(<App />);
 
-describe("1.", () => {
-  let tasks = [
-    {
-      id: 1,
-      title: "Task 1",
-      status: "In Progress",
-      assignee: "Alice",
-      dueDate: "2024-08-20",
-    },
-  ];
+  const input = screen.getByTestId('comment-input');
+  const submitButton = screen.getByTestId('submit-button');
 
-  const loadTasks = () =>
-    new Promise((res) => {
-      setTimeout(() => {
-        res(tasks);
-      }, 100)
-    });
-
-  test("Refresh icon should not spin initially", async () => {
-    // jest.useFakeTimers();
-
-    render(<TaskManager loadTasks={loadTasks}/>);
-
-    // jest.runAllTimers();
-
-    await screen.findByText("Task 1");
-
-    const iconEl = screen.getByTestId("refresh-icon");
-    expect(iconEl.classList.contains("animate-spin")).toBe(false);
-
-    // jest.useRealTimers()
+  fireEvent.change(input, {
+    target: { value: 'This is a new top-level comment' },
   });
-  test("Refresh icon should spin when refreshing and stop when done", async () => {
-    // jest.useFakeTimers();
+  fireEvent.click(submitButton);
 
-    render(<TaskManager loadTasks={loadTasks}/>);
-
-    // jest.runAllTimers();
-
-    await screen.findByText("Task 1");
-
-    const el = screen.getByTestId("refresh-button");
-
-    await user.click(el);
-
-    const iconEl = screen.getByTestId("refresh-icon");
-    expect(iconEl.classList.contains("animate-spin")).toBe(true);
-
-    // jest.runAllTimers();
-
-    await waitFor(() => {
-      expect(iconEl.classList.contains("animate-spin")).toBe(false);
-    }, {timeout: 200})
-
-    // jest.useRealTimers()
-  });
+  const commentList = screen.getByTestId('comment-1').parentElement;
+  expect(commentList.children[0]).toHaveTextContent(
+    'This is a new top-level comment'
+  );
 });
 
-describe("2.", () => {
-  let tasks = [
-    {
-      id: 1,
-      title: "Task 1",
-      status: "In Progress",
-      assignee: "Alice",
-      dueDate: "2024-08-20",
-    },
-  ];
+test('should add a reply to an existing comment and nest it correctly', () => {
+  render(<App />);
 
-  const loadTasks = () =>
-    new Promise((res) => {
-      setTimeout(() => {
-        res(tasks);
-        tasks = [
-          {
-            ...tasks[0],
-            status: tasks[0].status === "In Progress" ? "Pending" : "In Progress",
-          },
-          ...tasks.slice(1),
-        ];
-      }, 100)
-    });
+  const replyButton = screen.getByTestId('reply-button-1');
+  fireEvent.click(replyButton);
 
-  test("When data is refreshed in the table, it should be reflected in the card view too", async () => {
-    // jest.useFakeTimers();
-    render(<TaskManager loadTasks={loadTasks}/>);
+  const replyForm = screen.getByTestId('comment-form-wrapper-1');
+  const replyInput = replyForm.querySelector('[data-testid="comment-input"]');
+  const submitReplyButton = replyForm.querySelector(
+    '[data-testid="submit-button"]'
+  );
 
-    const cellEl = await screen.findByText("Task 1");
-
-    let taskRowEl = screen.getByTestId(`task-row-${tasks[0].id}`);
-    let taskRowStatusCellEl = taskRowEl.querySelector('[data-cell-type="status"]');
-
-    expect(taskRowStatusCellEl.textContent).toBe("In Progress");
-
-    await user.click(cellEl);
-
-    let taskCardEl = screen.getByTestId("task-card");
-    let taskCardStatusSelectEl = taskCardEl.querySelector("#status");
-    expect(taskCardStatusSelectEl.dataset.value).toBe("In Progress");
-
-    const refreshButtonEl = screen.getByTestId("refresh-button");
-    await user.click(refreshButtonEl);
-
-    await waitFor(() => {
-      expect(taskRowStatusCellEl.textContent).toBe("Pending");
-    }, {timeout: 200});
-
-    expect(taskCardStatusSelectEl.dataset.value).toBe("Pending");
+  fireEvent.change(replyInput, {
+    target: { value: 'This is a reply to the first comment' },
   });
+  fireEvent.click(submitReplyButton);
+
+  const parentComment = screen.getByTestId('comment-1');
+  const repliesContainer = parentComment.querySelector('.reply-container');
+
+  expect(repliesContainer.children[0]).toHaveTextContent(
+    'This is a reply to the first comment'
+  );
 });
 
-describe("3.", () => {
-  let tasks = [
-    {
-      id: 1,
-      title: "Task 1",
-      status: "In Progress",
-      assignee: "Alice",
-      dueDate: "2024-08-20",
-    },
-  ];
+test('should show only matching mention items in the dropdown', () => {
+  render(<App />);
 
-  const loadTasks = () =>
-    new Promise((res) => {
-      setTimeout(() => {
-        res(tasks);
-      }, 100)
-    });
+  const input = screen.getByTestId('comment-input');
+  fireEvent.change(input, { target: { value: '@a' } });
 
-  test("Editing a task in the card view should also update the task in the table view", async () => {
-    render(<TaskManager loadTasks={loadTasks}/>);
+  const mentionDropdown = screen.getByTestId('mentions-dropdown');
 
-    const cellEl = await screen.findByText("Task 1");
-    await user.click(cellEl);
-
-    await screen.findByTestId("task-card");
-
-    // In the task card, replace existing content with "hello world"
-    const inputEl = screen.getByLabelText('Title');
-    inputEl.setSelectionRange(0, inputEl.value.length);
-
-    await user.type(inputEl, "hello world");
-    await user.tab();
-
-    // In the task card, the updated value should be "hello world"
-    expect(screen.getByLabelText('Title').value).toBe("hello world");
-
-    const taskRowEl = await screen.findByTestId(`task-row-${tasks[0].id}`);
-
-    // In the table, the value should be "hello world"
-    expect(taskRowEl.querySelector('[data-cell-type="title"]').textContent).toBe("hello world");
-  });
+  expect(screen.getByTestId('mention-item-Alice')).toBeTruthy();
+  expect(screen.queryByTestId('mention-item-Bob')).not.toBeInTheDocument();
+  expect(screen.queryByTestId('mention-item-Charlie')).not.toBeInTheDocument();
 });
 
-describe("4.", () => {
-  let tasks = [
-    {
-      id: 1,
-      title: "Task 1",
-      status: "In Progress",
-      assignee: "Alice",
-      dueDate: "2024-08-20",
-    },
-    {
-      id: 2,
-      title: "Task 2",
-      status: "Pending",
-      assignee: "Bob",
-      dueDate: "2024-08-22",
-    },
-  ];
+test('should display cancel and submit buttons when the reply form is open, and submit button should be enabled/disabled based on input', () => {
+  render(<App />);
 
-  const loadTasks = () =>
-    new Promise((res) => {
-      setTimeout(() => {
-        res(tasks);
-      }, 100)
-    });
+  const replyButton = screen.getByTestId('reply-button-1');
+  fireEvent.click(replyButton);
 
-  test("Clicking on a task in the table should update the task card view", async () => {
-    render(<TaskManager loadTasks={loadTasks}/>);
+  const replyForm = screen.getByTestId('comment-form-wrapper-1');
+  const cancelButton = replyForm.querySelector('[data-testid="cancel-button"]');
+  const submitButton = replyForm.querySelector('[data-testid="submit-button"]');
+  const replyInput = replyForm.querySelector('[data-testid="comment-input"]');
 
-    await user.click(await screen.findByText("Task 1"));
+  expect(cancelButton).toBeTruthy();
+  expect(submitButton).toBeTruthy();
 
-    await screen.findByTestId("task-card");
+  expect(submitButton).toBeDisabled();
 
-    // the value in the task card
-    expect(screen.getByLabelText('Title').value).toBe("Task 1");
+  fireEvent.change(replyInput, { target: { value: 'This is a reply' } });
 
-    await user.click(await screen.findByText("Task 2"));
+  expect(submitButton).not.toBeDisabled();
 
-    // the value in the task card
-    expect(screen.getByLabelText('Title').value).toBe("Task 2");
-  });
+  fireEvent.change(replyInput, { target: { value: '' } });
+
+  expect(submitButton).toBeDisabled();
 });
 
-describe("5.", () => {
-  test("TaskCard should not render unnecessarily", async () => {
-    let task = {
-      id: 1,
-      title: "Task 1",
-      status: "In Progress",
-      assignee: "Alice",
-      dueDate: "2024-08-20",
-    };
+test('should hide mention dropdown when no matches are found', () => {
+  render(<App />);
 
-    global.renderCountArgs = [];
+  const input = screen.getByTestId('comment-input');
+  fireEvent.change(input, { target: { value: '@z' } });
 
-    const {rerender} = render(<TaskCard task={task} statuses={[]} users={[]}/>);
-
-    task = {...task};
-    rerender(<TaskCard task={task} statuses={[]} users={[]}/>);
-    expect(global.renderCountArgs).toEqual([
-      [1],
-      [2],
-    ]);
-  });
-})
-
+  const mentionDropdown = screen.queryByTestId('mentions-dropdown');
+  expect(mentionDropdown).not.toBeInTheDocument();
+});

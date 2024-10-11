@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="5" failures="0" errors="0" time="1.427">
+  <testsuite name="src/__tests__/sample.test.js" errors="0" failures="0" skipped="0" timestamp="2024-10-11T12:23:52" time="1.07" tests="5">
+    <testcase classname="" name="should add a new top-level comment and place it in the correct position" time="0.031">
+    </testcase>
+    <testcase classname="" name="should add a reply to an existing comment and nest it correctly" time="0.014">
+    </testcase>
+    <testcase classname="" name="should show only matching mention items in the dropdown" time="0.006">
+    </testcase>
+    <testcase classname="" name="should display cancel and submit buttons when the reply form is open, and submit button should be enabled/disabled based on input" time="0.007">
+    </testcase>
+    <testcase classname="" name="should hide mention dropdown when no matches are found" time="0.004">
+    </testcase>
+  </testsuite>
+</testsuites>
